@@ -43,28 +43,24 @@ jobs:
           </plist>
           EOF
 
-      - name: Compile & Embed Swift Libraries
+      - name: Compile and Embed Frameworks
         run: |
           SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
-          SWIFT_LIB_PATH="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos"
+          TOOLCHAIN_PATH=$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain
           
           mkdir -p Payload/NastyaAI.app/Frameworks
           
-          # Компиляция бинарника со связыванием SwiftUI/UIKit
+          # Компиляция бинарника
           swiftc -sdk $SDK_PATH \
                  -target arm64-apple-ios15.0 \
                  -emit-executable \
-                 -Xlinker -rpath -Xlinker /System/Library/Frameworks \
-                 -Xlinker -rpath -Xlinker @executable_path/Frameworks \
                  NastyaAI.swift \
                  -o Payload/NastyaAI.app/NastyaAI
           
           cp Info.plist Payload/NastyaAI.app/
           
-          # Копируем стандартные Swift фреймворки в бандл
-          if [ -d "$SWIFT_LIB_PATH" ]; then
-            cp -R "$SWIFT_LIB_PATH"/libswift*.dylib Payload/NastyaAI.app/Frameworks/ 2>/dev/null || true
-          fi
+          # Копируем динамические Swift-системы из Toolchain
+          find $TOOLCHAIN_PATH -name "*.dylib" -exec cp {} Payload/NastyaAI.app/Frameworks/ \; 2>/dev/null || true
           
           zip -r NastyaGenesis.ipa Payload
 
