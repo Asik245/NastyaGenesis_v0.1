@@ -23,14 +23,14 @@ jobs:
               <string>com.chupacode.nastya</string>
               <key>CFBundleName</key>
               <string>Nastya Genesis</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
               <key>CFBundleShortVersionString</key>
               <string>1.0</string>
               <key>CFBundleVersion</key>
               <string>1</string>
               <key>LSRequiresIPhoneOS</key>
               <true/>
-              <key>UILaunchStoryboardName</key>
-              <string>LaunchScreen</string>
               <key>UIRequiredDeviceCapabilities</key>
               <array>
                   <string>arm64</string>
@@ -43,12 +43,15 @@ jobs:
           </plist>
           EOF
 
-      - name: Compile Full iOS App
+      - name: Compile & Embed Swift Libraries
         run: |
-          mkdir -p Payload/NastyaAI.app
+          SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
+          SWIFT_LIB_PATH="$(xcode-select -p)/Toolchains/XcodeDefault.xctoolchain/usr/lib/swift/iphoneos"
           
-          # Компиляция кода со всеми нужными iOS фреймворками
-          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) \
+          mkdir -p Payload/NastyaAI.app/Frameworks
+          
+          # Компиляция бинарника со связыванием SwiftUI/UIKit
+          swiftc -sdk $SDK_PATH \
                  -target arm64-apple-ios15.0 \
                  -emit-executable \
                  -Xlinker -rpath -Xlinker /System/Library/Frameworks \
@@ -56,10 +59,13 @@ jobs:
                  NastyaAI.swift \
                  -o Payload/NastyaAI.app/NastyaAI
           
-          # Копируем файл конфигурации
           cp Info.plist Payload/NastyaAI.app/
           
-          # Упаковываем сочный IPA
+          # Копируем стандартные Swift фреймворки в бандл
+          if [ -d "$SWIFT_LIB_PATH" ]; then
+            cp -R "$SWIFT_LIB_PATH"/libswift*.dylib Payload/NastyaAI.app/Frameworks/ 2>/dev/null || true
+          fi
+          
           zip -r NastyaGenesis.ipa Payload
 
       - name: Upload IPA Artifact
