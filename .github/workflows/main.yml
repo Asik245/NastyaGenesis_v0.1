@@ -1,4 +1,4 @@
-name: Nastya Genesis IPA
+name: Build Nastya Genesis IPA
 
 on:
   workflow_dispatch:
@@ -16,8 +16,8 @@ jobs:
       - name: Compile Swift File
         run: |
           mkdir -p Payload
-          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 NastyaAI.swift -o Payload/ChupaAI
-          zip -r ChupaCode.ipa Payload
+          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 NastyaAI.swift -o Payload/NastyaAI
+          zip -r NastyaGenesis.ipa Payload
 
       - name: Upload IPA Artifact
         uses: actions/upload-artifact@v4
