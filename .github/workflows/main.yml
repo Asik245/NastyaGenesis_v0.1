@@ -1,0 +1,26 @@
+name: Nastya Genesis IPA
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-14
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Swift
+        run: swift --version
+
+      - name: Compile Swift File
+        run: |
+          mkdir -p Payload
+          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 NastyaAI.swift -o Payload/ChupaAI
+          zip -r ChupaCode.ipa Payload
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NastyaGenesis-IPA
+          path: NastyaGenesis.ipa
