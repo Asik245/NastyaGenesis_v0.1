@@ -10,13 +10,56 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Setup Swift
-        run: swift --version
-
-      - name: Compile Swift File
+      - name: Create Info.plist
         run: |
-          mkdir -p Payload
-          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) -target arm64-apple-ios15.0 NastyaAI.swift -o Payload/NastyaAI
+          cat <<EOF > Info.plist
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleExecutable</key>
+              <string>NastyaAI</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.chupacode.nastya</string>
+              <key>CFBundleName</key>
+              <string>Nastya Genesis</string>
+              <key>CFBundleShortVersionString</key>
+              <string>1.0</string>
+              <key>CFBundleVersion</key>
+              <string>1</string>
+              <key>LSRequiresIPhoneOS</key>
+              <true/>
+              <key>UILaunchStoryboardName</key>
+              <string>LaunchScreen</string>
+              <key>UIRequiredDeviceCapabilities</key>
+              <array>
+                  <string>arm64</string>
+              </array>
+              <key>UISupportedInterfaceOrientations</key>
+              <array>
+                  <string>UIInterfaceOrientationPortrait</string>
+              </array>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Compile Full iOS App
+        run: |
+          mkdir -p Payload/NastyaAI.app
+          
+          # Компиляция кода со всеми нужными iOS фреймворками
+          swiftc -sdk $(xcrun --sdk iphoneos --show-sdk-path) \
+                 -target arm64-apple-ios15.0 \
+                 -emit-executable \
+                 -Xlinker -rpath -Xlinker /System/Library/Frameworks \
+                 -Xlinker -rpath -Xlinker @executable_path/Frameworks \
+                 NastyaAI.swift \
+                 -o Payload/NastyaAI.app/NastyaAI
+          
+          # Копируем файл конфигурации
+          cp Info.plist Payload/NastyaAI.app/
+          
+          # Упаковываем сочный IPA
           zip -r NastyaGenesis.ipa Payload
 
       - name: Upload IPA Artifact
